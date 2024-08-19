@@ -37,6 +37,10 @@ func main() {
                 slice = append(slice, "LEFT_PAREN ( null")
             case ")":
                 slice = append(slice, "RIGHT_PAREN ) null")
+            case "{":
+                slice = append(slice, "LEFT_BRACE { null")
+            case "}":
+                slice = append(slice, "RIGHT_BRACE } null")
             }
         }
 

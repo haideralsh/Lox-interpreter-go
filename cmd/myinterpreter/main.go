@@ -3,6 +3,7 @@ package main
 import (
     "fmt"
     "os"
+    "strings"
 )
 
 func main() {
@@ -28,7 +29,20 @@ func main() {
     }
 
     if len(fileContents) > 0 {
-        fmt.Println("EOF  null")
+        var slice []string
+
+        for _, v := range fileContents {
+            switch string(v) {
+            case "(":
+                slice = append(slice, "LEFT_PAREN ( null")
+            case ")":
+                slice = append(slice, "RIGHT_PAREN ) null")
+            }
+        }
+
+        slice = append(slice, "EOF  null")
+
+        fmt.Println(strings.Join(slice, "\n"))
     } else {
         fmt.Println("EOF  null")
     }

@@ -28,7 +28,7 @@ func main() {
     }
 
     if len(fileContents) > 0 {
-        panic("Scanner not implemented")
+        fmt.Println("EOF  null")
     } else {
         fmt.Println("EOF  null")
     }

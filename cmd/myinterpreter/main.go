@@ -30,24 +30,7 @@ func run() error {
         return fmt.Errorf("error tokenizing: %w", err)
     }
 
-    containsError := false
-    for _, t := range tokens {
-        if !containsError {
-            containsError = t.Type == token.Error
-        }
-
-        if t.Type == token.Error {
-            fmt.Fprint(os.Stderr, t.String())
-        } else {
-            fmt.Fprint(os.Stdout, t.String())
-        }
-    }
-
-    if containsError {
-        os.Exit(65)
-    } else {
-        os.Exit(0)
-    }
+    token.PrintAndTerminate(tokens)
 
     return nil
 }

@@ -4,9 +4,16 @@ import (
     "bufio"
     "fmt"
     "io"
+    "os"
 )
 
 type Type string
+
+type Token struct {
+    Type   Type
+    Lexeme string
+    line   int
+}
 
 const (
     LeftParen  Type = "LEFT_PAREN"
@@ -21,13 +28,9 @@ const (
     SemiColon  Type = "SEMICOLON"
     Star       Type = "STAR"
     Error      Type = "Error"
+    Equal      Type = "EQUAL"
+    EqualEqual Type = "EQUAL_EQUAL"
 )
-
-type Token struct {
-    Type   Type
-    Lexeme string
-    line   int
-}
 
 func Tokenize(r io.Reader) ([]Token, error) {
     scanner := bufio.NewScanner(r)
@@ -60,6 +63,13 @@ func Tokenize(r io.Reader) ([]Token, error) {
             tokens = append(tokens, Token{SemiColon, char, line})
         case "*":
             tokens = append(tokens, Token{Star, char, line})
+        case "=":
+            lastToken := last(tokens)
+            if lastToken == nil || lastToken.Type != Error {
+                tokens = append(tokens, Token{Type: Equal, Lexeme: char, line: line})
+            }
+            tokens[len(tokens)-1] = Token{Type: EqualEqual, Lexeme: char, line: line}
+
         case "/n":
             line++
         default:
@@ -82,4 +92,32 @@ func (t Token) String() string {
     default:
         return fmt.Sprintf("%s %s null\n", t.Type, t.Lexeme)
     }
+}
+
+func PrintAndTerminate(tokens []Token) {
+    containsError := false
+    for _, t := range tokens {
+        if !containsError {
+            containsError = t.Type == Error
+        }
+
+        if t.Type == Error {
+            fmt.Fprint(os.Stderr, t.String())
+        } else {
+            fmt.Fprint(os.Stdout, t.String())
+        }
+    }
+
+    if containsError {
+        os.Exit(65)
+    } else {
+        os.Exit(0)
+    }
+}
+
+func last(tokens []Token) *Token {
+    if len(tokens) == 0 {
+        return nil
+    }
+    return &tokens[len(tokens)-1]
 }

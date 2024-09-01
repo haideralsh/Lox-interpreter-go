@@ -1,32 +1,11 @@
 package main
 
 import (
-	"bufio"
 	"fmt"
-	"io"
 	"os"
+
+	"github.com/codecrafters-io/interpreter-starter-go/token"
 )
-
-type TokenType string
-
-const (
-	LeftParen  TokenType = "LEFT_PAREN"
-	RightParen TokenType = "RIGHT_PAREN"
-	LeftBrace  TokenType = "LEFT_BRACE"
-	RightBrace TokenType = "RIGHT_BRACE"
-	EOF        TokenType = "EOF"
-	Comma      TokenType = "COMMA"
-	Dot        TokenType = "DOT"
-	Minus      TokenType = "MINUS"
-	Plus       TokenType = "PLUS"
-	SemiColon  TokenType = "SEMICOLON"
-	Star       TokenType = "STAR"
-)
-
-type Token struct {
-	Type   TokenType
-	Lexeme string
-}
 
 func main() {
 	if err := run(); err != nil {
@@ -46,56 +25,11 @@ func run() error {
 	}
 	defer file.Close()
 
-	tokens, err := tokenize(file)
+	tokens, err := token.Tokenize(file)
 	if err != nil {
 		return fmt.Errorf("error tokenizing: %w", err)
 	}
 
-	printTokens(tokens)
+	token.Print(tokens)
 	return nil
-}
-
-func tokenize(r io.Reader) ([]Token, error) {
-	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanRunes)
-
-	var tokens []Token
-	for scanner.Scan() {
-		char := scanner.Text()
-		switch char {
-		case "(":
-			tokens = append(tokens, Token{LeftParen, char})
-		case ")":
-			tokens = append(tokens, Token{RightParen, char})
-		case "{":
-			tokens = append(tokens, Token{LeftBrace, char})
-		case "}":
-			tokens = append(tokens, Token{RightBrace, char})
-		case ",":
-			tokens = append(tokens, Token{Comma, char})
-		case ".":
-			tokens = append(tokens, Token{Dot, char})
-		case "-":
-			tokens = append(tokens, Token{Minus, char})
-		case "+":
-			tokens = append(tokens, Token{Plus, char})
-		case ";":
-			tokens = append(tokens, Token{SemiColon, char})
-		case "*":
-			tokens = append(tokens, Token{Star, char})
-		}
-	}
-
-	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning input: %w", err)
-	}
-
-	tokens = append(tokens, Token{EOF, ""})
-	return tokens, nil
-}
-
-func printTokens(tokens []Token) {
-	for _, token := range tokens {
-		fmt.Printf("%s %s null\n", token.Type, token.Lexeme)
-	}
 }

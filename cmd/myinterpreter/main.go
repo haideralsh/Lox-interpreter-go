@@ -15,6 +15,12 @@ const (
 	LeftBrace  TokenType = "LEFT_BRACE"
 	RightBrace TokenType = "RIGHT_BRACE"
 	EOF        TokenType = "EOF"
+	Comma      TokenType = "COMMA"
+	Dot        TokenType = "DOT"
+	Minus      TokenType = "MINUS"
+	Plus       TokenType = "PLUS"
+	SemiColon  TokenType = "SEMICOLON"
+	Star       TokenType = "STAR"
 )
 
 type Token struct {
@@ -65,6 +71,18 @@ func tokenize(r io.Reader) ([]Token, error) {
 			tokens = append(tokens, Token{LeftBrace, char})
 		case "}":
 			tokens = append(tokens, Token{RightBrace, char})
+		case ",":
+			tokens = append(tokens, Token{Comma, char})
+		case ".":
+			tokens = append(tokens, Token{Dot, char})
+		case "-":
+			tokens = append(tokens, Token{Minus, char})
+		case "+":
+			tokens = append(tokens, Token{Plus, char})
+		case ";":
+			tokens = append(tokens, Token{SemiColon, char})
+		case "*":
+			tokens = append(tokens, Token{Star, char})
 		}
 	}
 

@@ -42,13 +42,21 @@ func Tokenize(r io.Reader) ([]token.Token, error) {
 		case "*":
 			t.Type, t.Lexeme = token.Star, char
 		case "=":
-			if len(tokens) > 0 && tokens[len(tokens)-1].Type == token.Equal {
-				tokens[len(tokens)-1].Type = token.EqualEqual
-				tokens[len(tokens)-1].Lexeme += char
-				continue
+			if len(tokens) > 0 {
+				switch tokens[len(tokens)-1].Type {
+				case token.Equal:
+					tokens[len(tokens)-1].Type = token.EqualEqual
+					tokens[len(tokens)-1].Lexeme += char
+					continue
+				case token.Bang:
+					tokens[len(tokens)-1].Type = token.BangEqual
+					tokens[len(tokens)-1].Lexeme += char
+					continue
+				}
 			}
 			t.Type, t.Lexeme = token.Equal, char
-
+		case "!":
+			t.Type, t.Lexeme = token.Bang, char
 		case "\n":
 			line++
 			continue

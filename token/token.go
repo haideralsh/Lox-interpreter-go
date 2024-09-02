@@ -22,6 +22,8 @@ const (
 	Error      Type = "Error"
 	Equal      Type = "EQUAL"
 	EqualEqual Type = "EQUAL_EQUAL"
+	Bang       Type = "BANG"
+	BangEqual  Type = "BANG_EQUAL"
 )
 
 type Token struct {

@@ -2,6 +2,7 @@ package token
 
 import (
 	"fmt"
+	"os"
 )
 
 type Type string
@@ -33,5 +34,14 @@ func (t Token) String() string {
 	if t.Type == Error {
 		return fmt.Sprintf("[line %d] Error: Unexpected character: %s", t.Line, t.Lexeme)
 	}
+
 	return fmt.Sprintf("%s %s null", t.Type, t.Lexeme)
+}
+
+func (t Token) Print() {
+	if t.Type == Error {
+		fmt.Fprintln(os.Stderr, t.String())
+	} else {
+		fmt.Fprintln(os.Stdout, t.String())
+	}
 }

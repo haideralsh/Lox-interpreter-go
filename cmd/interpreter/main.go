@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/codecrafters-io/interpreter-starter-go/io"
 	"github.com/codecrafters-io/interpreter-starter-go/lexer"
-	"github.com/codecrafters-io/interpreter-starter-go/printer"
 )
 
 func main() {
@@ -31,7 +31,8 @@ func run() error {
 		return fmt.Errorf("error tokenizing: %w", err)
 	}
 
-	printer.PrintAndTerminate(tokens)
+	io.Print(tokens)
+	io.Exit(tokens)
 
 	return nil
 }

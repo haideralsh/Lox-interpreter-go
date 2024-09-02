@@ -4,21 +4,50 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strings"
 
 	"github.com/codecrafters-io/interpreter-starter-go/token"
 )
 
 func Tokenize(r io.Reader) ([]token.Token, error) {
 	scanner := bufio.NewScanner(r)
-	scanner.Split(bufio.ScanRunes)
+	scanner.Split(bufio.ScanLines)
 
 	var tokens []token.Token
-	line := 1
+	lineNumber := 1
 
+	for scanner.Scan() {
+		lineText := scanner.Text()
+		lineText = stripComments(lineText)
+
+		lineTokens, err := tokenizeLine(lineText, lineNumber)
+		if err != nil {
+			return nil, err
+		}
+		tokens = append(tokens, lineTokens...)
+
+		lineNumber++
+	}
+
+	if err := scanner.Err(); err != nil {
+		return nil, fmt.Errorf("error scanning input: %w", err)
+	}
+
+	tokens = append(tokens, token.Token{Type: token.EOF, Line: lineNumber})
+	return tokens, nil
+}
+
+func tokenizeLine(line string, lineNumber int) ([]token.Token, error) {
+	var tokens []token.Token
+	reader := strings.NewReader(line)
+	scanner := bufio.NewScanner(reader)
+	scanner.Split(bufio.ScanRunes)
+
+lineLoop:
 	for scanner.Scan() {
 		char := scanner.Text()
 
-		t := token.Token{Line: line}
+		t := token.Token{Line: lineNumber}
 
 		switch char {
 		case "(":
@@ -45,32 +74,23 @@ func Tokenize(r io.Reader) ([]token.Token, error) {
 			t.Type, t.Lexeme = token.Less, char
 		case ">":
 			t.Type, t.Lexeme = token.Greater, char
+		case "/":
+			t.Type, t.Lexeme = token.Slash, char
 		case "=":
 			if len(tokens) > 0 {
-				switch tokens[len(tokens)-1].Type {
-				case token.Equal:
-					tokens[len(tokens)-1].Type = token.EqualEqual
-					tokens[len(tokens)-1].Lexeme += char
-					continue
-				case token.Bang:
-					tokens[len(tokens)-1].Type = token.BangEqual
-					tokens[len(tokens)-1].Lexeme += char
-					continue
-				case token.Less:
-					tokens[len(tokens)-1].Type = token.LessEqual
-					tokens[len(tokens)-1].Lexeme += char
-					continue
-				case token.Greater:
-					tokens[len(tokens)-1].Type = token.GreaterEqual
-					tokens[len(tokens)-1].Lexeme += char
-					continue
+				lastToken := &tokens[len(tokens)-1]
+				for _, composite := range token.Composites {
+					if lastToken.Type == composite.Base {
+						lastToken.Type = composite.Full
+						lastToken.Lexeme += char
+						continue lineLoop
+					}
 				}
 			}
 			t.Type, t.Lexeme = token.Equal, char
 		case "!":
 			t.Type, t.Lexeme = token.Bang, char
-		case "\n":
-			line++
+		case " ", "\t":
 			continue
 		default:
 			t.Type, t.Lexeme = token.Error, char
@@ -80,9 +100,15 @@ func Tokenize(r io.Reader) ([]token.Token, error) {
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning input: %w", err)
+		return nil, fmt.Errorf("error scanning line: %w", err)
 	}
 
-	tokens = append(tokens, token.Token{Type: token.EOF, Line: line})
 	return tokens, nil
+}
+
+func stripComments(line string) string {
+	if commentIndex := strings.Index(line, token.BEGINNING_OF_COMMENT); commentIndex != -1 {
+		return line[:commentIndex]
+	}
+	return line
 }

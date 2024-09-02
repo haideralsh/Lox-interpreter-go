@@ -7,6 +7,8 @@ import (
 
 type Type string
 
+const BEGINNING_OF_COMMENT = "//"
+
 const (
 	LeftParen    Type = "LEFT_PAREN"
 	RightParen   Type = "RIGHT_PAREN"
@@ -28,7 +30,20 @@ const (
 	LessEqual    Type = "LESS_EQUAL"
 	Greater      Type = "GREATER"
 	GreaterEqual Type = "GREATER_EQUAL"
+	Slash        Type = "SLASH"
 )
+
+type composite struct {
+	Base Type
+	Full Type
+}
+
+var Composites = []composite{
+	{Equal, EqualEqual},
+	{Bang, BangEqual},
+	{Less, LessEqual},
+	{Greater, GreaterEqual},
+}
 
 type Token struct {
 	Type   Type

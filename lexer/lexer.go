@@ -41,6 +41,10 @@ func Tokenize(r io.Reader) ([]token.Token, error) {
 			t.Type, t.Lexeme = token.SemiColon, char
 		case "*":
 			t.Type, t.Lexeme = token.Star, char
+		case "<":
+			t.Type, t.Lexeme = token.Less, char
+		case ">":
+			t.Type, t.Lexeme = token.Greater, char
 		case "=":
 			if len(tokens) > 0 {
 				switch tokens[len(tokens)-1].Type {
@@ -50,6 +54,14 @@ func Tokenize(r io.Reader) ([]token.Token, error) {
 					continue
 				case token.Bang:
 					tokens[len(tokens)-1].Type = token.BangEqual
+					tokens[len(tokens)-1].Lexeme += char
+					continue
+				case token.Less:
+					tokens[len(tokens)-1].Type = token.LessEqual
+					tokens[len(tokens)-1].Lexeme += char
+					continue
+				case token.Greater:
+					tokens[len(tokens)-1].Type = token.GreaterEqual
 					tokens[len(tokens)-1].Lexeme += char
 					continue
 				}

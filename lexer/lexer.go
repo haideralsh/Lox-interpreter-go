@@ -9,36 +9,41 @@ import (
 	"github.com/codecrafters-io/interpreter-starter-go/token"
 )
 
-func Tokenize(r io.Reader) ([]token.Token, error) {
+func Tokenize(r io.Reader) ([]token.Token, []token.Error, error) {
 	scanner := bufio.NewScanner(r)
 	scanner.Split(bufio.ScanLines)
 
 	var tokens []token.Token
+	var errors []token.Error
+
 	lineNumber := 1
 
 	for scanner.Scan() {
 		lineText := scanner.Text()
-		lineText = stripComments(lineText)
 
-		lineTokens, err := tokenizeLine(lineText, lineNumber)
+		lineTokens, lineErrors, err := tokenizeLine(lineText, lineNumber)
 		if err != nil {
-			return nil, err
+			return nil, nil, err
 		}
 		tokens = append(tokens, lineTokens...)
+		errors = append(errors, lineErrors...)
 
 		lineNumber++
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning input: %w", err)
+		return nil, nil, fmt.Errorf("error scanning input: %w", err)
 	}
 
 	tokens = append(tokens, token.Token{Type: token.EOF, Line: lineNumber})
-	return tokens, nil
+
+	return tokens, errors, nil
 }
 
-func tokenizeLine(line string, lineNumber int) ([]token.Token, error) {
+func tokenizeLine(line string, lineNumber int) ([]token.Token, []token.Error, error) {
 	var tokens []token.Token
+	var errors []token.Error
+
 	reader := strings.NewReader(line)
 	scanner := bufio.NewScanner(reader)
 	scanner.Split(bufio.ScanRunes)
@@ -47,35 +52,40 @@ lineLoop:
 	for scanner.Scan() {
 		char := scanner.Text()
 
-		t := token.Token{Line: lineNumber}
-
 		switch char {
 		case "(":
-			t.Type, t.Lexeme = token.LeftParen, char
+			tokens = append(tokens, token.Token{Type: token.LeftParen, Lexeme: char})
 		case ")":
-			t.Type, t.Lexeme = token.RightParen, char
+			tokens = append(tokens, token.Token{Type: token.RightParen, Lexeme: char})
 		case "{":
-			t.Type, t.Lexeme = token.LeftBrace, char
+			tokens = append(tokens, token.Token{Type: token.LeftBrace, Lexeme: char})
 		case "}":
-			t.Type, t.Lexeme = token.RightBrace, char
+			tokens = append(tokens, token.Token{Type: token.RightBrace, Lexeme: char})
 		case ",":
-			t.Type, t.Lexeme = token.Comma, char
+			tokens = append(tokens, token.Token{Type: token.Comma, Lexeme: char})
 		case ".":
-			t.Type, t.Lexeme = token.Dot, char
+			tokens = append(tokens, token.Token{Type: token.Dot, Lexeme: char})
 		case "-":
-			t.Type, t.Lexeme = token.Minus, char
+			tokens = append(tokens, token.Token{Type: token.Minus, Lexeme: char})
 		case "+":
-			t.Type, t.Lexeme = token.Plus, char
+			tokens = append(tokens, token.Token{Type: token.Plus, Lexeme: char})
 		case ";":
-			t.Type, t.Lexeme = token.SemiColon, char
+			tokens = append(tokens, token.Token{Type: token.SemiColon, Lexeme: char})
 		case "*":
-			t.Type, t.Lexeme = token.Star, char
+			tokens = append(tokens, token.Token{Type: token.Star, Lexeme: char})
 		case "<":
-			t.Type, t.Lexeme = token.Less, char
+			tokens = append(tokens, token.Token{Type: token.Less, Lexeme: char})
 		case ">":
-			t.Type, t.Lexeme = token.Greater, char
+			tokens = append(tokens, token.Token{Type: token.Greater, Lexeme: char})
 		case "/":
-			t.Type, t.Lexeme = token.Slash, char
+			for scanner.Scan() {
+				char = scanner.Text()
+				if char == "/" {
+					break lineLoop
+				}
+			}
+
+			tokens = append(tokens, token.Token{Type: token.Slash, Lexeme: char})
 		case "=":
 			if len(tokens) > 0 {
 				lastToken := &tokens[len(tokens)-1]
@@ -87,28 +97,34 @@ lineLoop:
 					}
 				}
 			}
-			t.Type, t.Lexeme = token.Equal, char
+			tokens = append(tokens, token.Token{Type: token.Equal, Lexeme: char})
 		case "!":
-			t.Type, t.Lexeme = token.Bang, char
+			tokens = append(tokens, token.Token{Type: token.Bang, Lexeme: char})
 		case " ", "\t":
 			continue
+		case "\"":
+			literal := ""
+			for scanner.Scan() {
+				char = scanner.Text()
+				if char == "\"" {
+					break
+				}
+				literal += char
+			}
+			if char != "\"" {
+				errors = append(errors, token.Error{Line: lineNumber, Message: "Unterminated string."})
+			} else {
+				lexeme := fmt.Sprintf("\"%s\"", literal)
+				tokens = append(tokens, token.Token{Type: token.String, Lexeme: lexeme, Literal: literal})
+			}
 		default:
-			t.Type, t.Lexeme = token.Error, char
+			errors = append(errors, token.Error{Line: lineNumber, Message: fmt.Sprintf("Unexpected character: %s", char)})
 		}
-
-		tokens = append(tokens, t)
 	}
 
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("error scanning line: %w", err)
+		return nil, nil, fmt.Errorf("error scanning line: %w", err)
 	}
 
-	return tokens, nil
-}
-
-func stripComments(line string) string {
-	if commentIndex := strings.Index(line, token.BEGINNING_OF_COMMENT); commentIndex != -1 {
-		return line[:commentIndex]
-	}
-	return line
+	return tokens, errors, nil
 }

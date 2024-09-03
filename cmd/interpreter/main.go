@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"os"
 
-	"github.com/codecrafters-io/interpreter-starter-go/io"
 	"github.com/codecrafters-io/interpreter-starter-go/lexer"
+	"github.com/codecrafters-io/interpreter-starter-go/output"
 )
 
 func main() {
@@ -26,13 +26,13 @@ func run() error {
 	}
 	defer file.Close()
 
-	tokens, err := lexer.Tokenize(file)
+	tokens, errors, err := lexer.Tokenize(file)
 	if err != nil {
 		return fmt.Errorf("error tokenizing: %w", err)
 	}
 
-	io.Print(tokens)
-	io.Exit(tokens)
+	output.Print(tokens, errors)
+	output.Exit(errors)
 
 	return nil
 }

@@ -31,6 +31,7 @@ const (
 	GreaterEqual Type = "GREATER_EQUAL"
 	Slash        Type = "SLASH"
 	String       Type = "STRING"
+	Number       Type = "NUMBER"
 )
 
 type composite struct {

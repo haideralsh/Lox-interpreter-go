@@ -4,6 +4,7 @@ import (
 	"bufio"
 	"fmt"
 	"io"
+	"strconv"
 	"strings"
 
 	"github.com/codecrafters-io/interpreter-starter-go/token"
@@ -51,33 +52,60 @@ func tokenizeLine(line string, lineNumber int) ([]token.Token, []token.Error, er
 lineLoop:
 	for scanner.Scan() {
 		char := scanner.Text()
+		foundNonNumber := false
 
-		switch char {
-		case "(":
+		if isNumber(char) {
+			literal := []string{char}
+			for scanner.Scan() {
+				char = scanner.Text()
+				if isNumber(char) {
+					literal = append(literal, char)
+				} else {
+					foundNonNumber = true
+					break
+				}
+			}
+
+			strLiteral := strings.Join(literal, "")
+
+			if every(literal, isDot) {
+				for _, l := range literal {
+					tokens = append(tokens, token.Token{Type: token.Dot, Lexeme: l})
+				}
+			} else {
+				tokens = append(tokens, token.Token{Type: token.Number, Lexeme: strLiteral, Literal: fmtNumberLiteral(strLiteral)})
+			}
+
+			if !foundNonNumber {
+				break
+			}
+		}
+
+		if is(char, "(") {
 			tokens = append(tokens, token.Token{Type: token.LeftParen, Lexeme: char})
-		case ")":
+		} else if is(char, ")") {
 			tokens = append(tokens, token.Token{Type: token.RightParen, Lexeme: char})
-		case "{":
+		} else if is(char, "{") {
 			tokens = append(tokens, token.Token{Type: token.LeftBrace, Lexeme: char})
-		case "}":
+		} else if is(char, "}") {
 			tokens = append(tokens, token.Token{Type: token.RightBrace, Lexeme: char})
-		case ",":
+		} else if is(char, ",") {
 			tokens = append(tokens, token.Token{Type: token.Comma, Lexeme: char})
-		case ".":
+		} else if is(char, ".") {
 			tokens = append(tokens, token.Token{Type: token.Dot, Lexeme: char})
-		case "-":
+		} else if is(char, "-") {
 			tokens = append(tokens, token.Token{Type: token.Minus, Lexeme: char})
-		case "+":
+		} else if is(char, "+") {
 			tokens = append(tokens, token.Token{Type: token.Plus, Lexeme: char})
-		case ";":
+		} else if is(char, ";") {
 			tokens = append(tokens, token.Token{Type: token.SemiColon, Lexeme: char})
-		case "*":
+		} else if is(char, "*") {
 			tokens = append(tokens, token.Token{Type: token.Star, Lexeme: char})
-		case "<":
+		} else if is(char, "<") {
 			tokens = append(tokens, token.Token{Type: token.Less, Lexeme: char})
-		case ">":
+		} else if is(char, ">") {
 			tokens = append(tokens, token.Token{Type: token.Greater, Lexeme: char})
-		case "/":
+		} else if is(char, "/") {
 			for scanner.Scan() {
 				char = scanner.Text()
 				if char == "/" {
@@ -86,7 +114,7 @@ lineLoop:
 			}
 
 			tokens = append(tokens, token.Token{Type: token.Slash, Lexeme: char})
-		case "=":
+		} else if is(char, "=") {
 			if len(tokens) > 0 {
 				lastToken := &tokens[len(tokens)-1]
 				for _, composite := range token.Composites {
@@ -98,11 +126,11 @@ lineLoop:
 				}
 			}
 			tokens = append(tokens, token.Token{Type: token.Equal, Lexeme: char})
-		case "!":
+		} else if is(char, "!") {
 			tokens = append(tokens, token.Token{Type: token.Bang, Lexeme: char})
-		case " ", "\t":
+		} else if is(char, " ") || is(char, "\t") {
 			continue
-		case "\"":
+		} else if is(char, "\"") {
 			literal := ""
 			for scanner.Scan() {
 				char = scanner.Text()
@@ -117,7 +145,7 @@ lineLoop:
 				lexeme := fmt.Sprintf("\"%s\"", literal)
 				tokens = append(tokens, token.Token{Type: token.String, Lexeme: lexeme, Literal: literal})
 			}
-		default:
+		} else {
 			errors = append(errors, token.Error{Line: lineNumber, Message: fmt.Sprintf("Unexpected character: %s", char)})
 		}
 	}
@@ -127,4 +155,47 @@ lineLoop:
 	}
 
 	return tokens, errors, nil
+}
+
+func is(a, b string) bool {
+	return a == b
+}
+
+func isNumber(char string) bool {
+	if isDigit(char) {
+		return true
+	}
+
+	if isDot(char) {
+		return true
+	}
+
+	return false
+}
+
+func isDigit(char string) bool {
+	return char >= "0" && char <= "9"
+}
+
+func isDot(char string) bool {
+	return char == "."
+}
+
+func fmtNumberLiteral(literal string) string {
+	floatLiteral, _ := strconv.ParseFloat(literal, 64)
+
+	if !strings.Contains(literal, ".") {
+		return fmt.Sprintf("%.1f", floatLiteral)
+	}
+
+	return fmt.Sprintf("%.2f", float64(floatLiteral))
+}
+
+func every[T any](arr []T, condition func(T) bool) bool {
+	for _, v := range arr {
+		if !condition(v) {
+			return false
+		}
+	}
+	return true
 }
